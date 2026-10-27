@@ -7,12 +7,16 @@ Writes JSON files to data/ in the exact shape the dashboard reads:
                     {ticker, name, kind, price, prev_close, chg, as_of, session}
   data/yields.json  daily Treasury yields (%), last 6 months: {date, y3m, y5, y10, y30}
   data/oil.json     daily WTI and Brent (US$/bbl), last 6 months: {date, wti, brent}
+  data/inflation.json  monthly index levels from FRED, last 3 years:
+                    {month, cpi, core_cpi, core_pce} (needs the FRED_API_KEY secret)
   data/meta.json    when it ran and anything that failed
 
 To change what's tracked, edit the lists below.
 """
 import json
 import os
+import urllib.parse
+import urllib.request
 import sys
 import time
 from datetime import datetime, timedelta
@@ -29,6 +33,7 @@ FUTURES = {"ES=F": "S&P 500 futures", "NQ=F": "Nasdaq-100 futures",
            "YM=F": "Dow futures", "RTY=F": "Russell 2000 futures"}
 YIELDS = {"y3m": "^IRX", "y5": "^FVX", "y10": "^TNX", "y30": "^TYX"}
 OIL = {"wti": "CL=F", "brent": "BZ=F"}
+FRED = {"cpi": "CPIAUCSL", "core_cpi": "CPILFESL", "core_pce": "PCEPILFE"}  # FRED series ids
 # --------------------------------------------------------------------------------
 
 ET = ZoneInfo("America/New_York")
@@ -177,6 +182,29 @@ if ocols:
         oil.append({"date": d.isoformat(),
                     **{k: (None if pd.isna(r.get(k)) else round(float(r[k]), 2)) for k in OIL}})
 
+# ---- inflation.json (FRED) ----
+def fred_series(series_id, key):
+    start = (NOW.date() - timedelta(days=3 * 366 + 31)).isoformat()
+    url = "https://api.stlouisfed.org/fred/series/observations?" + urllib.parse.urlencode(
+        {"series_id": series_id, "api_key": key, "file_type": "json", "observation_start": start})
+
+    def get():
+        with urllib.request.urlopen(url, timeout=30) as r:
+            obs = json.load(r)["observations"]
+        return {o["date"][:7]: float(o["value"]) for o in obs if o["value"] not in (".", "")}
+
+    return retry(get, f"FRED {series_id}") or {}
+
+
+inflation = []
+fred_key = os.environ.get("FRED_API_KEY", "").strip()
+if not fred_key:
+    errors.append("FRED_API_KEY secret not set: inflation.json skipped")
+else:
+    fs = {k: fred_series(sid, fred_key) for k, sid in FRED.items()}
+    for m in sorted(set().union(*fs.values())):
+        inflation.append({"month": m, **{k: fs[k].get(m) for k in FRED}})
+
 # ---- write ----
 if prices:
     write("prices.json", prices)
@@ -186,8 +214,11 @@ if yields:
     write("yields.json", yields)
 if oil:
     write("oil.json", oil)
+if inflation:
+    write("inflation.json", inflation)
 meta = {"generated_at": NOW.isoformat(timespec="seconds"),
-        "rows": {"prices": len(prices), "live": len(live), "yields": len(yields), "oil": len(oil)},
+        "rows": {"prices": len(prices), "live": len(live), "yields": len(yields), "oil": len(oil),
+                 "inflation": len(inflation)},
         "tickers_missing": sorted(set(all_syms) - {p["ticker"] for p in prices}),
         "errors": errors[:50]}
 write("meta.json", meta)

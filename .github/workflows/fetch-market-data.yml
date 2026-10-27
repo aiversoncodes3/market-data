@@ -39,7 +39,9 @@ jobs:
       - name: Install packages
         run: pip install -r requirements.txt
 
-      - name: Pull data from Yahoo Finance
+      - name: Pull data from Yahoo Finance and FRED
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }} # stored in repo Settings > Secrets, never in code
         run: python fetch.py
 
       - name: Save data to the repo
