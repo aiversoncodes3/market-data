@@ -2,13 +2,12 @@ name: Fetch market data
 
 on:
   schedule:
-    # GitHub cron times are UTC, Monday-Friday.
-    # 10:15 UTC = 6:15 AM Toronto in summer (EDT) / 5:15 AM in winter (EST)
-    # 11:15 UTC = 7:15 AM Toronto in summer (EDT) / 6:15 AM in winter (EST)
-    # Two runs keep a fresh pull before the 7:07 AM dashboard refresh all year.
+    # GitHub cron times are UTC, Monday-Friday (each trading day's close).
+    # 22:00 UTC = 5:00 PM Toronto in winter (EST) / 6:00 PM in summer (EDT)
+    # Always after the 4 PM close, so the data is ready well before the
+    # 7:07 AM dashboard refresh the next morning.
     # GitHub can start scheduled runs 10-20 minutes late at busy times.
-    - cron: "15 10 * * 1-5"
-    - cron: "15 11 * * 1-5"
+    - cron: "0 22 * * 1-5"
   workflow_dispatch: # adds a "Run workflow" button on the Actions tab
   push: # also runs whenever the script or this file changes
     branches: [main]
