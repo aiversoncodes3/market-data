@@ -1,1 +1,1 @@
-{"generated_at":"2026-11-06T20:36:00-05:00","rows":{"prices":414,"live":22,"yields":129,"oil":129,"inflation":36},"tickers_missing":[],"errors":[]}
+{"generated_at":"2026-11-09T22:57:13-05:00","rows":{"prices":391,"live":22,"yields":127,"oil":127,"inflation":36},"tickers_missing":["QQQ"],"errors":["QQQ: no daily closes"]}
