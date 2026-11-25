@@ -1,1 +1,1 @@
-{"generated_at":"2026-11-24T00:43:55-05:00","rows":{"prices":414,"live":22,"yields":127,"oil":128,"inflation":37},"tickers_missing":[],"errors":[]}
+{"generated_at":"2026-11-24T23:46:25-05:00","rows":{"prices":391,"live":22,"yields":128,"oil":128,"inflation":37},"tickers_missing":["AAPL"],"errors":["AAPL: no daily closes"]}
